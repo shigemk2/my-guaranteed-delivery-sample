@@ -1,7 +1,7 @@
 package com.example
 
-import akka.actor.ActorPath
-import akka.persistence.{Channel, Deliver, PersistenceFailure, Persistent, Processor, Recover, SnapshotSelectionCriteria}
+import akka.actor.{Actor, ActorPath}
+import akka.persistence.{Channel, ConfirmablePersistent, Deliver, PersistenceFailure, Persistent, Processor, Recover, SnapshotSelectionCriteria}
 import com.example._
 
 object GuaranteedDeliveryDriver extends CompletableApp(2) {
@@ -36,6 +36,17 @@ class OrderProcessor(orderAnalyzer: ActorPath) extends Processor {
       GuaranteedDeliveryDriver.completedStep
     case non_persisted: Any =>
       println(s"Handling non-persistent: $non_persisted")
+      GuaranteedDeliveryDriver.completedStep
+  }
+}
+
+class OrderAnalyzer extends Actor {
+  def receive = {
+    case confirmable @ ConfirmablePersistent(
+    actualMessage, sequenceNumber, redeliveries) =>
+
+      println(s"OrderAnalyzer: $actualMessage")
+      confirmable.confirm
       GuaranteedDeliveryDriver.completedStep
   }
 }
