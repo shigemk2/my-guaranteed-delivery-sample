@@ -1,10 +1,23 @@
 package com.example
 
-import akka.actor.{Actor, ActorPath}
+import java.util.Date
+
+import akka.actor.{Actor, ActorPath, Props}
 import akka.persistence.{Channel, ConfirmablePersistent, Deliver, PersistenceFailure, Persistent, Processor, Recover, SnapshotSelectionCriteria}
 import com.example._
 
 object GuaranteedDeliveryDriver extends CompletableApp(2) {
+  val analyzer1 =
+    system.actorOf(Props[OrderAnalyzer], "orderAnalyzer1")
+
+  val orderProcessor1 =
+    system.actorOf(Props(classOf[OrderProcessor], analyzer1.path), "orderProcessor1")
+
+  val orderId = new Date().getTime.toString
+  println(s"Processing: $orderId")
+  orderProcessor1 ! Persistent(ProcessOrder(orderId, "Details..."))
+
+  awaitCompletion
 }
 
 case class ProcessOrder(orderId: String, details: String)
